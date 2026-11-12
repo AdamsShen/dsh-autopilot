@@ -28,6 +28,10 @@ done (checklist clear)
 | Security & trust boundaries | 4 |
 | Test gaps & regression (read-only) | 5 |
 
+![Autopilot intercepting the turn boundary and injecting a review round](https://raw.githubusercontent.com/AdamsShen/dsh-autopilot-harness/main/docs/demo.png)
+
+*Real output: a real DSH host running the published `dsh-autopilot-harness@0.1.0`.*
+
 ---
 
 ## Why "Harness", and how this differs from other DSH Autopilot plugins

@@ -28,6 +28,10 @@ Autopilot 拦截 DSH 的回合边界（`agent/turn-stopping`）。当 agent 改�
 | 安全与信任边界 | 4 |
 | 测试缺口与回归（只读） | 5 |
 
+![Autopilot 拦截回合边界并注入自审](https://raw.githubusercontent.com/AdamsShen/dsh-autopilot-harness/main/docs/demo.png)
+
+*真实输出：真实 DSH 宿主运行已发布的 `dsh-autopilot-harness@0.1.0`。*
+
 ---
 
 ## 为什么叫 Harness，它和别的 DSH Autopilot 插件有什么不同
