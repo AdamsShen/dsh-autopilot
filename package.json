@@ -47,8 +47,9 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run build && npm test && npm pack --dry-run",
-    "prepack": "npm run build"
+    "check": "npm run typecheck && npm run build && npm test && npm run test:e2e && npm pack --dry-run",
+    "prepack": "npm run build",
+    "test:e2e": "npm run build && node tests/e2e/lifecycle.mjs && node tests/e2e/safety.mjs"
   },
   "dependencies": {
     "@autopilot-harness/core": "^0.18.5"
@@ -72,6 +73,13 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.1.0",
     "@deepseek-ai/dsh-agent": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-agent-loop": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-commands": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-session": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tool-executor-native": "^0.2.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
     "@deepseek-ai/schemastery": "^3.18.2",
     "@types/node": "^22.13.10",
     "typescript": "^5.9.3",

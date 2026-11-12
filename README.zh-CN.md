@@ -210,10 +210,13 @@ DSH 插件全局安装，一个宿主进程会服务多个项目的会话。`pro
 ```bash
 npm install
 npm run typecheck
-npm test
+npm test               # 单测（44 项）
+npm run test:e2e       # 起真实 DSH 宿主，23 项断言
 npm run build
-npm run check          # typecheck + build + test + npm pack --dry-run
+npm run check          # 以上全部 + npm pack --dry-run
 ```
+
+`tests/e2e/` 把**构建产物**装进真实 DSH 宿主跑（真实 `AgentLoop`、`ToolRuntime`、`Commands`），而不是直接调 handler。宿主版本漂移就是靠它抓出来的——见 [tests/e2e/README.md](./tests/e2e/README.md)。
 
 ### 目录
 

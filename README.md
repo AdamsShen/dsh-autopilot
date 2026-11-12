@@ -210,10 +210,13 @@ DSH installs plugins globally, so one host process serves sessions from many pro
 ```bash
 npm install
 npm run typecheck
-npm test
+npm test               # unit tests (44)
+npm run test:e2e       # boots a real DSH host, 23 assertions
 npm run build
-npm run check          # typecheck + build + test + npm pack --dry-run
+npm run check          # all of the above + npm pack --dry-run
 ```
+
+`tests/e2e/` runs the **built** plugin inside a real DSH host (real `AgentLoop`, `ToolRuntime`, `Commands`) rather than calling handlers directly. It is what catches host-version drift — see [tests/e2e/README.md](./tests/e2e/README.md).
 
 ### Layout
 
