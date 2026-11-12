@@ -1,0 +1,22 @@
+# Autopilot Harness — 把 autopilot 的规划/执行/自审流程接进 DSH。
+#
+# 进程内插件（不是 shell hook）：订阅 agent/pre-step、tools/post-execute、
+# agent/turn-stopping，并通过 agent.steer() 续跑。
+#
+# ⚠️ 本插件**默认不会在你的项目里创建任何文件**。
+#    要启用某个项目，请在该项目的会话里执行：
+#        /autopilot-enable
+#    或者在工作区条目上使用菜单里的「启用 Autopilot」。
+#    init 只在显式启用时执行。
+#
+# projectRoot: 默认留空 —— 按**每个会话自己的工作目录**（session.header.cwd）
+#   自动判定项目，同一个 DSH 进程可同时服务多个项目，各自独立的 .autopilot/。
+#   只有想强行钉死到某个目录时才填。
+- insert:
+    - id: autopilot-harness
+      name: 'dsh-autopilot/plugin'
+      config:
+        # 保持 false：不自动初始化。显式启用走 /autopilot-enable。
+        autoInit: false
+        maxSteerPerTurn: 32
+        # projectRoot: /path/to/your-app   # 一般不填：默认按会话 cwd 判定
