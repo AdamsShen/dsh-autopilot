@@ -41,7 +41,7 @@ dsh plugin --profile web add dsh-autopilot
 **From source** (works even before an npm release):
 
 ```bash
-dsh plugin --profile web add github:<owner>/dsh-autopilot
+dsh plugin --profile web add github:AdamsShen/dsh-autopilot
 ```
 
 `dist/` is committed, so the source install needs no build step.

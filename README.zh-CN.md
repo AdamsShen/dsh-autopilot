@@ -41,7 +41,7 @@ dsh plugin --profile web add dsh-autopilot
 **从源码安装**（尚未发 npm 也可用）：
 
 ```bash
-dsh plugin --profile web add github:<owner>/dsh-autopilot
+dsh plugin --profile web add github:AdamsShen/dsh-autopilot
 ```
 
 `dist/` 已纳入版本控制，源码安装无需构建。
