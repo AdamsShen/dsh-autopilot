@@ -1,5 +1,5 @@
 {
-  "name": "dsh-autopilot",
+  "name": "dsh-autopilot-harness",
   "version": "0.1.0",
   "description": "Autopilot Harness plugin for DeepSeek Harness (DSH) — structured planning, checklist execution, and multi-lens self-review inside DSH.",
   "icon": "./assets/icon.svg",
@@ -78,7 +78,7 @@
     "@deepseek-ai/dsh-llm": "0.2.2-rc.1",
     "@deepseek-ai/dsh-session": "0.2.2-rc.1",
     "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.1",
-    "@deepseek-ai/dsh-tool-executor-native": "^0.2.2-rc.1",
+    "@deepseek-ai/dsh-tool-executor-native": "0.2.2-rc.1",
     "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
     "@deepseek-ai/schemastery": "^3.18.2",
     "@types/node": "^22.13.10",

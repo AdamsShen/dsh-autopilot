@@ -35,7 +35,7 @@ Autopilot 拦截 DSH 的回合边界（`agent/turn-stopping`）。当 agent 改�
 **从 npm 安装**（会出现在 DSH 插件中心）：
 
 ```bash
-dsh plugin --profile web add dsh-autopilot
+dsh plugin --profile web add dsh-autopilot-harness
 ```
 
 **从源码安装**（尚未发 npm 也可用）：
@@ -55,7 +55,7 @@ dsh plugin --profile web add github:AdamsShen/dsh-autopilot
       "bundles": [
         "@deepseek-ai/dsh-base",
         "@deepseek-ai/dsh-web-app",
-        "dsh-autopilot"
+        "dsh-autopilot-harness"
       ]
     }
   }

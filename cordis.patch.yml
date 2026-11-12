@@ -14,7 +14,7 @@
 #   只有想强行钉死到某个目录时才填。
 - insert:
     - id: autopilot-harness
-      name: 'dsh-autopilot/plugin'
+      name: 'dsh-autopilot-harness/plugin'
       config:
         # 保持 false：不自动初始化。显式启用走 /autopilot-enable。
         autoInit: false

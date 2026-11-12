@@ -35,7 +35,7 @@ done (checklist clear)
 **From npm** (appears in the DSH plugin center):
 
 ```bash
-dsh plugin --profile web add dsh-autopilot
+dsh plugin --profile web add dsh-autopilot-harness
 ```
 
 **From source** (works even before an npm release):
@@ -55,7 +55,7 @@ dsh plugin --profile web add github:AdamsShen/dsh-autopilot
       "bundles": [
         "@deepseek-ai/dsh-base",
         "@deepseek-ai/dsh-web-app",
-        "dsh-autopilot"
+        "dsh-autopilot-harness"
       ]
     }
   }
