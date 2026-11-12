@@ -27,6 +27,15 @@ interface AutopilotPluginConfig {
     /** 检测到项目却未初始化时自动建 .autopilot/（默认 true，幂等，fail-open）。 */
     autoInit?: boolean;
 }
+/**
+ * 构造一条插件来源的 UserMessage。
+ * `source.kind` 必须是 v4 认可的生产者自有取值（见 DSH_PLUGIN_SOURCE_KIND），
+ * 否则宿主接纳消息时会抛出
+ * `format v4 message requires a producer-owned source kind`。
+ * 该结构化 source 同时让 autopilot 后续能可靠识别自身注入，
+ * 不依赖文本前缀（spike2/3 证实 source 会持久化并可回读）。
+ */
+export declare function buildPluginMessage(text: string): Record<string, unknown>;
 export declare function apply(ctx: Context, config?: AutopilotPluginConfig): void;
 export {};
 //# sourceMappingURL=plugin.d.ts.map

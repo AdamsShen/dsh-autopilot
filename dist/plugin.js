@@ -21,7 +21,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { StateStore, createConfiguredReviewEngine } from "@autopilot-harness/core";
 import { autoInitProject, isAlreadyInitialized } from "./auto-init.js";
-import { DSH_PLUGIN_SOURCE, conversationIdFromDshPayload, handleDshSubmit, handleDshToolResult, handleDshTurnStopping, isDshHarnessMessage, resolveDshWorkspaceRoot, } from "./index.js";
+import { DSH_PLUGIN_SOURCE_KIND, conversationIdFromDshPayload, handleDshSubmit, handleDshToolResult, handleDshTurnStopping, isDshHarnessMessage, resolveDshWorkspaceRoot, } from "./index.js";
 export const name = "autopilot";
 /** 可选配置面。schemastery 缺席时 Config 为 undefined，不影响运行态。 */
 export let Config;
@@ -86,14 +86,17 @@ function makeLog(ctx) {
 }
 /**
  * 构造一条插件来源的 UserMessage。
- * `source.kind === "plugin"` 让 autopilot 后续能可靠识别自身注入，
+ * `source.kind` 必须是 v4 认可的生产者自有取值（见 DSH_PLUGIN_SOURCE_KIND），
+ * 否则宿主接纳消息时会抛出
+ * `format v4 message requires a producer-owned source kind`。
+ * 该结构化 source 同时让 autopilot 后续能可靠识别自身注入，
  * 不依赖文本前缀（spike2/3 证实 source 会持久化并可回读）。
  */
-function buildPluginMessage(text) {
+export function buildPluginMessage(text) {
     return {
         role: "user",
         content: [{ type: "text", text }],
-        source: { kind: "plugin", plugin: DSH_PLUGIN_SOURCE, form: "notice" },
+        source: { kind: DSH_PLUGIN_SOURCE_KIND, form: "notice" },
     };
 }
 export function apply(ctx, config = {}) {

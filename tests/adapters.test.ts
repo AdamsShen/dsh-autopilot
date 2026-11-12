@@ -3,12 +3,14 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ReviewEngine, StateStore } from "@autopilot-harness/core";
+import { buildPluginMessage } from "../src/plugin.js";
 import {
   buildNeedPickMessage,
   conversationIdFromDshPayload,
   DSH_EDIT_TOOLS,
   DSH_PLATFORM,
   DSH_PLUGIN_SOURCE,
+  DSH_PLUGIN_SOURCE_KIND,
   DSH_STOP_CAP_RAISE_FOUND,
   filePathsFromDshToolInput,
   handleDshSubmit,
@@ -119,7 +121,11 @@ describe("dsh-autopilot 常量与纯函数", () => {
   });
 
   it("优先用结构化 source 识别自家注入", () => {
-    // source 命中 —— 主判据
+    // source 命中 —— 主判据（v4 的 producer-owned kind）
+    expect(
+      isDshHarnessMessage({ sourceKind: DSH_PLUGIN_SOURCE_KIND }),
+    ).toBe(true);
+    // 兼容 v4 之前落盘的历史写法（kind="plugin" + plugin="autopilot"）
     expect(
       isDshHarnessMessage({
         sourceKind: "plugin",
@@ -137,6 +143,36 @@ describe("dsh-autopilot 常量与纯函数", () => {
       isDshHarnessMessage({ prompt: "Review fix round 1: ..." }),
     ).toBe(true);
     expect(isDshHarnessMessage({ prompt: "普通用户消息" })).toBe(false);
+  });
+
+  it("注入消息的 source.kind 绝不为 v4 禁止的 \"plugin\"", () => {
+    // 回归：DSH session 格式 v4 在接纳新消息时拒绝 kind==="plugin"，
+    // 报 "format v4 message requires a producer-owned source kind"。
+    // 该写法曾导致会话内任何自然语言输入都「本轮运行失败」。
+    expect(DSH_PLUGIN_SOURCE_KIND).not.toBe("plugin");
+    expect(DSH_PLUGIN_SOURCE_KIND).toMatch(/^plugin:/);
+    expect(DSH_PLUGIN_SOURCE_KIND).toBe(`plugin:${DSH_PLUGIN_SOURCE}`);
+  });
+
+  it("buildPluginMessage 产出的消息可被 v4 接纳（真实注入形状）", () => {
+    // 断言真正的构造结果，而不只是常量：即使有人把 buildPluginMessage
+    // 改回字面量 "plugin"，这条测试也必须失败。
+    const message = buildPluginMessage("autopilot 注入内容");
+    const source = (message as { source?: { kind?: string; plugin?: unknown } })
+      .source;
+
+    expect(source?.kind).toBe(DSH_PLUGIN_SOURCE_KIND);
+    expect(source?.kind).not.toBe("plugin");
+    // 旧 wrapper 的 plugin 字段必须不再出现（v4 已淘汰该写法）
+    expect(source).not.toHaveProperty("plugin");
+    expect(message).toMatchObject({
+      role: "user",
+      content: [{ type: "text", text: "autopilot 注入内容" }],
+    });
+
+    // 与读取端对称：注入的消息必须能被识别为「自家消息」，
+    // 否则 autopilot 会把自己的注入当作用户输入，导致循环。
+    expect(isDshHarnessMessage({ sourceKind: source?.kind })).toBe(true);
   });
 
   it("从 tool_input 抽取路径并解析相对路径", () => {

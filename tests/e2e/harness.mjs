@@ -18,6 +18,10 @@ import { AgentLoop } from "@deepseek-ai/dsh-agent-loop";
 import Commands from "@deepseek-ai/dsh-commands";
 import { SessionProjectionRegistry } from "@deepseek-ai/dsh-session-projection";
 import * as nativeExecutor from "@deepseek-ai/dsh-tool-executor-native";
+import {
+  DSH_PLUGIN_SOURCE,
+  DSH_PLUGIN_SOURCE_KIND,
+} from "../../dist/index.js";
 
 export const PROVIDER = "e2e";
 
@@ -188,13 +192,24 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * 取插件发起的 steer 调用。
- * 只统计本插件发的（source.plugin === "autopilot"），
- * 避免把别的来源也算进来。
+ * 只统计本插件发的，避免把别的来源也算进来。
+ *
+ * 判据随 DSH session 格式 v4 变化：
+ *   v4 起插件注入消息的 source 不再带 `plugin` 字段，而是把生产者身份
+ *   编进 kind（`plugin:<生产者名>`）。仍兼容 v3 时代的
+ *   `{ kind: "plugin", plugin: "<生产者名>" }` 写法。
+ *
+ * 判据直接引用插件导出的常量，不再手写字面量：
+ *   否则常量改名时这里会静默失配，测试仍绿但断言失效
+ *   （本次缺陷正是「测试把错误写法当成规范」才长期未被发现）。
  */
 export function pluginSteers(handle) {
-  return (handle?.steers ?? []).filter(
-    (m) => m?.source?.plugin === "autopilot",
-  );
+  return (handle?.steers ?? []).filter((m) => {
+    const source = m?.source;
+    if (!source || typeof source !== "object") return false;
+    if (source.kind === DSH_PLUGIN_SOURCE_KIND) return true;
+    return source.kind === "plugin" && source.plugin === DSH_PLUGIN_SOURCE;
+  });
 }
 
 /** 清理临时项目目录。 */

@@ -53,6 +53,24 @@ export const DSH_PLATFORM = "dsh";
 export const DSH_PLUGIN_SOURCE = "autopilot";
 
 /**
+ * 插件注入消息的 `source.kind` 取值。
+ *
+ * 为什么不能再用 `"plugin"`：
+ *   DSH 的 session 格式 v4 在接纳新消息时执行
+ *   `format v4 message requires a producer-owned source kind`，
+ *   明确拒绝 `kind === "plugin"` 的 retired wrapper 写法
+ *   （v3→v4 迁移层会把旧的 `kind:"plugin"` 改写掉，但**新写入**的消息不经过迁移）。
+ *   继续用 `"plugin"` 会让 autopilot 每次注入都抛出该错误，
+ *   表现为会话内任何自然语言输入都「本轮运行失败」。
+ *
+ * 为什么是 `plugin:${DSH_PLUGIN_SOURCE}`：
+ *   v4 的 kind 是开放取值，只要求「由生产者自己拥有」。
+ *   DSH 迁移层对未在内置清单中的第三方插件正是采用 `plugin:<name>` 形态，
+ *   这里保持同构，且与既有磁盘数据中的 `plugin:autopilot` 兼容。
+ */
+export const DSH_PLUGIN_SOURCE_KIND = `plugin:${DSH_PLUGIN_SOURCE}`;
+
+/**
  * DSH 无已知的 stop-continue 硬性上限（无 loop_limit / BLOCK_CAP）。
  * 因此不 clamp confirm_rounds —— 与 Cursor / Claude Code 同级。
  */
@@ -157,6 +175,11 @@ export function isDshHarnessMessage(p: {
   sourceKind?: string | null;
   sourcePlugin?: string | null;
 }): boolean {
+  // 新格式：kind 为 producer-owned 的 `plugin:autopilot`，不再带 plugin 字段。
+  if (p.sourceKind === DSH_PLUGIN_SOURCE_KIND) {
+    return true;
+  }
+  // 兼容 v4 之前落盘的历史消息：kind="plugin" + plugin="autopilot"。
   if (p.sourceKind === "plugin" && p.sourcePlugin === DSH_PLUGIN_SOURCE) {
     return true;
   }
