@@ -1,0 +1,97 @@
+{
+  "name": "dsh-autopilot",
+  "version": "0.1.0",
+  "description": "Autopilot Harness plugin for DeepSeek Harness (DSH) — structured planning, checklist execution, and multi-lens self-review inside DSH.",
+  "icon": "./assets/icon.svg",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "plugin",
+    "autopilot",
+    "harness",
+    "agent",
+    "vibecoding",
+    "checklist",
+    "code-review"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "assets",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run build && npm test && npm pack --dry-run",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@autopilot-harness/core": "^0.18.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.2",
+    "@deepseek-ai/dsh-agent": ">=0.2.1-rc.2 <0.3.0",
+    "@deepseek-ai/schemastery": ">=3.18.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-agent": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/dsh-agent": "0.2.2-rc.1",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdamsShen/dsh-autopilot.git"
+  },
+  "homepage": "https://github.com/AdamsShen/dsh-autopilot#readme",
+  "bugs": {
+    "url": "https://github.com/AdamsShen/dsh-autopilot/issues"
+  },
+  "author": "AdamsShen (https://github.com/AdamsShen)"
+}
