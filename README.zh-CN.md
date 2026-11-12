@@ -4,7 +4,7 @@
 
 [English](./README.md)
 
-> [Autopilot Harness](https://github.com/mt2007/autopilot-harness) 家族成员。核心引擎：[`@autopilot-harness/core`](https://www.npmjs.com/package/@autopilot-harness/core)。
+> [Autopilot Harness](https://github.com/AdamsShen/autopilot-harness) 家族成员。核心引擎：[`@autopilot-harness/core`](https://www.npmjs.com/package/@autopilot-harness/core)。
 
 ---
 

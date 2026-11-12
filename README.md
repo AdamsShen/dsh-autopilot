@@ -4,7 +4,7 @@ Structured **planning → checklist execution → multi-lens self-review** insid
 
 [中文](./README.zh-CN.md)
 
-> Part of the [Autopilot Harness](https://github.com/mt2007/autopilot-harness) family. Core engine: [`@autopilot-harness/core`](https://www.npmjs.com/package/@autopilot-harness/core).
+> Part of the [Autopilot Harness](https://github.com/AdamsShen/autopilot-harness) family. Core engine: [`@autopilot-harness/core`](https://www.npmjs.com/package/@autopilot-harness/core).
 
 ---
 
