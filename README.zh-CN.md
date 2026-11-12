@@ -30,6 +30,60 @@ Autopilot 拦截 DSH 的回合边界（`agent/turn-stopping`）。当 agent 改�
 
 ---
 
+## 为什么叫 Harness，它和别的 DSH Autopilot 插件有什么不同
+
+DSH 上好些插件都叫 autopilot。这一个的身份是 **[Autopilot Harness](https://github.com/AdamsShen/autopilot-harness) 的 DeepSeek Harness 端口**——那个引擎已经服务于 Cursor、Claude Code、Codex、Kimi、Copilot CLI、Grok、Gemini CLI、Factory Droid、Hermes、Antigravity、Pi、Devin 和 runner。这个背景带来的差别：
+
+| | 本插件 | 一般的「一直跑到达成」循环 |
+|---|---|---|
+| **介入时机** | 回合边界，且**只有改过产品代码**才介入 | 无条件持续循环 |
+| **在边界做什么** | 跑**五个轮换的评审视角**，每轮焦点不同 | 重复同一条指令，直到看起来做完 |
+| **依据什么判断** | 实际 diff、不变量、错误路径、竞态、信任边界、测试缺口 | agent 自己声称完成 |
+| **规划** | `/autopilot-on` 走 grill 提问并写出 `brief.md` / `plan.md` / `checklist.md` | 通常没有，一个 prompt 一个循环 |
+| **进度记录** | 仓库里的 `checklist.md` + SQLite 状态库 | 只在上下文里，重启即丢 |
+| **状态边界** | 按项目隔离，以会话工作目录为键 | 常常是进程级 |
+| **文件纪律** | 你执行 `/autopilot-enable` 之前**不写任何文件** | 各不相同 |
+
+实际差别在于：普通续跑循环让 agent **说得更久**；Autopilot 让它**换一个它原本没用的角度再看一遍**，然后才推进。
+
+### 它刻意不做什么
+
+- **不是任务管理器。** 没有看板 UI、没有迭代规划。它就是一份清单加一台执行状态机。
+- **不是测试框架。** 第 5 个视角**记录**测试缺口，不会自动生成测试。
+- **不做无人值守的通宵作业。** 每一步推进都基于你能审阅的实际改动。
+- **不联网、不需要凭据、不采集遥测。** 见[兼容性与权限](#兼容性与权限)。
+
+---
+
+## 快速开始（5 分钟）
+
+```bash
+# ① 安装（一次性）
+dsh plugin --profile web add dsh-autopilot-harness
+
+# ② 把下面这行加进 ~/.dsh/profiles/web/package.json 的 dsh.profile.bundles
+#    "dsh-autopilot-harness"
+
+# ③ 完全退出 DSH 再打开（Node 模块缓存需要重启）
+
+# ④ 在目标项目的会话里启用（每个项目一次）
+/autopilot-enable
+```
+
+到这里就生效了。**最直接的验证方式**：随便改一个源文件，然后什么都不说。几秒后 agent 应该自己开始自审——那就是 Autopilot 在工作。
+
+想做一件有规划的功能，再走清单模式：
+
+```
+/autopilot-on user-login · 实现手机号+验证码登录
+     ↓  回答几轮提问
+     ↓  产出 docs/autopilot/plans/user-login/{brief,plan,checklist}.md
+/autopilot-run
+     ↓  逐项实现 → 自审 → 勾掉 → 本地 commit
+```
+
+---
+
 ## 安装
 
 **从 npm 安装**（会出现在 DSH 插件中心）：

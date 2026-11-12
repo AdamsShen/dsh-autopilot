@@ -30,6 +30,60 @@ done (checklist clear)
 
 ---
 
+## Why "Harness", and how this differs from other DSH Autopilot plugins
+
+Several DSH plugins use the word *autopilot*. This one is the **DeepSeek Harness port of [Autopilot Harness](https://github.com/AdamsShen/autopilot-harness)** — an engine that already ships for Cursor, Claude Code, Codex, Kimi, Copilot CLI, Grok, Gemini CLI, Factory Droid, Hermes, Antigravity, Pi, Devin, and a runner. What that background buys you:
+
+| | This plugin | A generic "keep going until done" loop |
+|---|---|---|
+| **Where it intervenes** | At the turn boundary, only when a **product-code edit** happened | Continuously, regardless of what changed |
+| **What it does at that boundary** | Runs **five rotating review lenses**, each with a different focus | Repeats the same instruction until the task looks finished |
+| **What it debugs from** | Diffs, invariants, error paths, races, trust boundaries, test gaps | The agent's own claim of completion |
+| **Planning** | `/autopilot-on` runs grill rounds and writes `brief.md` / `plan.md` / `checklist.md` | Usually none — one prompt, one loop |
+| **Progress record** | `checklist.md` in the repo, plus a SQLite state DB | In-context only; lost on restart |
+| **State boundary** | Per project, keyed by the session's working directory | Often per process |
+| **File discipline** | Writes nothing until **you** run `/autopilot-enable` | Varies |
+
+The practical difference: a plain continuation loop makes the agent **talk longer**. Autopilot makes it **look again from an angle it was not using** — then move on.
+
+### What it deliberately does not do
+
+- **Not a task manager.** No board UI, no sprint planning. It is a checklist plus an execution FSM.
+- **Not a test framework.** Lens 5 *records* test gaps; it does not invent test suites.
+- **Not autonomous overnight work.** Every advance is grounded in an edit you can review.
+- **No network, no credentials, no telemetry.** See [Compatibility and permissions](#compatibility-and-permissions).
+
+---
+
+## Quick start
+
+```bash
+# ① 安装（一次性）
+dsh plugin --profile web add dsh-autopilot-harness
+
+# ② 把下面这行加进 ~/.dsh/profiles/web/package.json 的 dsh.profile.bundles
+#    "dsh-autopilot-harness"
+
+# ③ 完全退出 DSH 再打开（Node 模块缓存需要重启）
+
+# ④ 在目标项目的会话里启用（每个项目一次）
+/autopilot-enable
+```
+
+到这里就生效了。**最直接的验证方式**：随便改一个源文件，然后什么都不说。几秒后 agent 应该自己开始自审——那就是 Autopilot 在工作。
+
+想做一件有规划的功能，再走清单模式：
+
+```
+/autopilot-on user-login · 实现手机号+验证码登录
+     ↓  回答几轮提问
+     ↓  产出 docs/autopilot/plans/user-login/{brief,plan,checklist}.md
+/autopilot-run
+     ↓  逐项实现 → 自审 → 勾掉 → 本地 commit
+```
+
+---
+
 ## Install
 
 **From npm** (appears in the DSH plugin center):
@@ -160,7 +214,7 @@ Plugin-level, in the profile's bundle entry:
 
 ---
 
-## How it differs from other Autopilot ports
+## DSH port mechanics
 
 Every other host blocks its stop event with a decision object. DSH has no such decision: `agent/turn-stopping` is a **serial** hook, and continuation is a data side effect.
 
