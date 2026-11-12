@@ -95,11 +95,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AdamsShen/dsh-autopilot.git"
+    "url": "git+https://github.com/AdamsShen/dsh-autopilot-harness.git"
   },
-  "homepage": "https://github.com/AdamsShen/dsh-autopilot#readme",
+  "homepage": "https://github.com/AdamsShen/dsh-autopilot-harness#readme",
   "bugs": {
-    "url": "https://github.com/AdamsShen/dsh-autopilot/issues"
+    "url": "https://github.com/AdamsShen/dsh-autopilot-harness/issues"
   },
   "author": "AdamsShen (https://github.com/AdamsShen)"
 }
