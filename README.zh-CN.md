@@ -86,7 +86,7 @@ dsh plugin --profile web add dsh-autopilot-harness
 
 ## 安装
 
-**从 npm 安装**（会出现在 DSH 插件中心）：
+**从 npm 安装** —— 推荐，DSH 插件中心用的就是这条：
 
 ```bash
 dsh plugin --profile web add dsh-autopilot-harness

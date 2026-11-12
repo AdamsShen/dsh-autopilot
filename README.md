@@ -86,7 +86,7 @@ dsh plugin --profile web add dsh-autopilot-harness
 
 ## Install
 
-**From npm** (appears in the DSH plugin center):
+**From npm** — recommended; this is what the DSH plugin center installs:
 
 ```bash
 dsh plugin --profile web add dsh-autopilot-harness
