@@ -1,6 +1,6 @@
 {
   "name": "dsh-autopilot-harness",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Autopilot Harness plugin for DeepSeek Harness (DSH) — structured planning, checklist execution, and multi-lens self-review inside DSH.",
   "icon": "./assets/icon.svg",
   "license": "MIT",
