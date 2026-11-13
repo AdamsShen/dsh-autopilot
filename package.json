@@ -49,7 +49,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run build && npm test && npm run test:e2e && npm pack --dry-run",
     "prepack": "npm run build",
-    "test:e2e": "npm run build && node tests/e2e/lifecycle.mjs && node tests/e2e/safety.mjs"
+    "test:e2e": "npm run build && node tests/e2e/lifecycle.mjs && node tests/e2e/safety.mjs && node tests/e2e/plan-run.mjs"
   },
   "dependencies": {
     "@autopilot-harness/core": "^0.18.5"

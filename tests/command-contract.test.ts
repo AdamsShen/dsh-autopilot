@@ -102,6 +102,36 @@ describe("dsh 命令契约（CommandResult）", () => {
     expect(out.text).toBeTruthy();
   });
 
+  it("命令回环消息必须自带唯一 id（防会话损坏回归）", async () => {
+    // 背景：`/autopilot-*` 用 followup 把文本投回对话。DSH 落盘 user/message
+    // 时不补 id，重开会话时持久化层校验 id 缺失即抛
+    // `lacks an identified message`，整个会话打不开。
+    const root = tmpProject();
+    fs.mkdirSync(path.join(root, ".autopilot"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".autopilot", "config.yml"), "platforms: []\n");
+
+    const cmds = captureCommands(root);
+    const on = cmds.find((c) => c.name === "autopilot-on")!;
+    const sent: Array<{ id?: unknown; role?: unknown }> = [];
+
+    const out = (await on.handler({
+      agent: {
+        id: "s1",
+        session: { id: "s1", header: { cwd: root } },
+        followup: (message: unknown) => sent.push(message as { id?: unknown }),
+      },
+      rawInput: "",
+      signal: new AbortController().signal,
+      commandId: "c1",
+    })) as { kind: string };
+
+    expect(out.kind).toBe("success");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.role).toBe("user");
+    expect(typeof sent[0]?.id).toBe("string");
+    expect(sent[0]?.id).not.toBe("");
+  });
+
   it("已启用的项目返回 success 且说明已启用", async () => {
     const root = tmpProject();
     fs.mkdirSync(path.join(root, ".autopilot"), { recursive: true });

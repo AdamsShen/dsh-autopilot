@@ -56,11 +56,22 @@ export function makeProject(prefix) {
   return root;
 }
 
-/** 固定返回文本的假模型；每次调用计一步，用来证明"真的又跑了一步"。 */
+/**
+ * 脚本化假模型；每次调用计一步，用来证明"真的又跑了一步"。
+ *
+ * `script` 是逐次消费的行为队列，元素两种形态：
+ *   { text: "..." }                          —— 纯文本回复
+ *   { toolCall: { name, arguments } }        —— 发起一次工具调用
+ * 队列耗尽后回落到 `step-N` 文本，行为与旧版一致。
+ *
+ * 需要工具调用才能测的因果链：模型只有真的改代码，才会再次命中
+ * tools/post-execute，从而推动"修复轮 → 确认轮"的自动循环。
+ */
 export class ScriptedLlm extends LlmAdapter {
-  constructor() {
+  constructor(script = []) {
     super();
     this.steps = 0;
+    this.script = [...script];
   }
   providerInfo(provider) {
     return { id: provider, name: "scripted", models: [] };
@@ -76,11 +87,40 @@ export class ScriptedLlm extends LlmAdapter {
   }
   async *stream() {
     this.steps += 1;
-    const text = `step-${this.steps}`;
+    const action = this.script.shift();
+
+    if (action?.toolCall) {
+      const { name } = action.toolCall;
+      // 参数允许传函数：需要"写入时刻"的字段（例如 verify-last.json 的 at
+      // 时间下界）不能在脚本构造时求值，否则会被判定为过期证据。
+      const args =
+        typeof action.toolCall.arguments === "function"
+          ? action.toolCall.arguments()
+          : action.toolCall.arguments;
+      const id = `call-scripted-${this.steps}`;
+      const argumentsJson = JSON.stringify(args ?? {});
+      yield { type: "block-start", index: 0, blockType: "tool-call" };
+      yield {
+        type: "tool-call-delta",
+        index: 0,
+        id,
+        name,
+        argumentsDelta: argumentsJson,
+      };
+      yield {
+        type: "block-end",
+        index: 0,
+        block: { type: "tool-call", id, name, arguments: argumentsJson },
+      };
+      yield { type: "finish", reason: { kind: "tool-calls" } };
+      return;
+    }
+
+    const text = action?.text ?? `step-${this.steps}`;
     yield { type: "block-start", index: 0, blockType: "text" };
     yield { type: "text-delta", index: 0, text };
     yield { type: "block-end", index: 0, block: { type: "text", text } };
-    yield { type: "finish", reason: "end-turn" };
+    yield { type: "finish", reason: { kind: "stop" } };
   }
 }
 
@@ -90,7 +130,7 @@ export class ScriptedLlm extends LlmAdapter {
  * 注意插件从 `dist/` 加载（跑前需 build），而不是源码：这样测的是**实际发布产物**，
  * 能抓到 tsc 输出、exports 映射一类只在打包后才暴露的问题。
  */
-export async function bootHost({ pluginDist, pluginModule, tools = true } = {}) {
+export async function bootHost({ pluginDist, pluginModule, tools = true, script = [] } = {}) {
   const ctx = new Context();
   // 注册顺序即依赖顺序：AgentRegistry 需要 sessionProjections，
   // ToolRuntime 需要 systemPrompt，AgentLoop 需要它们全部就位。
@@ -108,7 +148,7 @@ export async function bootHost({ pluginDist, pluginModule, tools = true } = {}) 
 
   await new Promise((r) => setTimeout(r, 200));
 
-  const llm = new ScriptedLlm();
+  const llm = new ScriptedLlm(script);
   ctx.get("llm").registerAdapter([PROVIDER], llm);
 
   const toolsRuntime = ctx.get("tools");
@@ -180,7 +220,10 @@ export async function openSession(host, sessionId, cwd) {
 
 /** 发一条用户消息并等回合结束。 */
 export async function say(handle, text) {
+  // 真实 DSH 客户端投递的用户消息一定带 id；缺 id 会让落盘的 user/message
+  // 在重开会话时被判为损坏（lacks an identified message）。
   handle.agent.followup({
+    id: crypto.randomUUID(),
     role: "user",
     content: [{ type: "text", text }],
     source: { kind: "user" },

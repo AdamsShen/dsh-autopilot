@@ -90,8 +90,18 @@ export interface DshAgentLike {
   followup?(message: DshMessageLike): void;
 }
 
-/** DSH Message 的最小结构面。 */
+/**
+ * DSH Message 的最小结构面。
+ *
+ * `id` 必填（DSH 侧为不变量，不是可选装饰）：
+ *   - 落盘成 `user/message` 后，重开会话时持久化层要求 `id` 为非空字符串，
+ *     否则抛 `lacks an identified message`，整个会话被判为损坏；
+ *   - inbox 待处理队列按 `id` 去重，两条无 id 消息同时排队会抛
+ *     `message "undefined" is already pending`。
+ * 插件自己构造消息时必须生成唯一 id。
+ */
 export interface DshMessageLike {
+  id: string;
   role: "user" | "assistant" | "system";
   content: readonly { type: string; text?: string }[];
   source?: { kind?: string; plugin?: string; form?: string };

@@ -18,6 +18,7 @@
  *   - agent/turn-stopping → 核心续跑点，用 agent.steer() 而非 block
  */
 import type { Context } from "@deepseek-ai/cordis";
+import type { DshMessageLike } from "./dsh-events.js";
 export declare const name = "autopilot";
 /** 可选配置面。schemastery 缺席时 Config 为 undefined，不影响运行态。 */
 export declare let Config: unknown;
@@ -34,8 +35,14 @@ interface AutopilotPluginConfig {
  * `format v4 message requires a producer-owned source kind`。
  * 该结构化 source 同时让 autopilot 后续能可靠识别自身注入，
  * 不依赖文本前缀（spike2/3 证实 source 会持久化并可回读）。
+ *
+ * `id` 必填：DSH 落盘 `user/message` 时不补 id，而重新打开会话时
+ * 持久化层会逐条校验 `typeof message.id === "string"`，缺失即抛
+ * `session event at seq N lacks an identified message`，整个会话打不开。
+ * inbox 待处理队列也按 id 去重，两条无 id 消息同时排队会命中
+ * `message "undefined" is already pending`。
  */
-export declare function buildPluginMessage(text: string): Record<string, unknown>;
+export declare function buildPluginMessage(text: string): DshMessageLike;
 export declare function apply(ctx: Context, config?: AutopilotPluginConfig): void;
 export {};
 //# sourceMappingURL=plugin.d.ts.map

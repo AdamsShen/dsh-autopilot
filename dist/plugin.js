@@ -17,6 +17,7 @@
  *   - tools/post-execute  → arm 写类工具
  *   - agent/turn-stopping → 核心续跑点，用 agent.steer() 而非 block
  */
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { StateStore, createConfiguredReviewEngine } from "@autopilot-harness/core";
@@ -91,9 +92,16 @@ function makeLog(ctx) {
  * `format v4 message requires a producer-owned source kind`。
  * 该结构化 source 同时让 autopilot 后续能可靠识别自身注入，
  * 不依赖文本前缀（spike2/3 证实 source 会持久化并可回读）。
+ *
+ * `id` 必填：DSH 落盘 `user/message` 时不补 id，而重新打开会话时
+ * 持久化层会逐条校验 `typeof message.id === "string"`，缺失即抛
+ * `session event at seq N lacks an identified message`，整个会话打不开。
+ * inbox 待处理队列也按 id 去重，两条无 id 消息同时排队会命中
+ * `message "undefined" is already pending`。
  */
 export function buildPluginMessage(text) {
     return {
+        id: randomUUID(),
         role: "user",
         content: [{ type: "text", text }],
         source: { kind: DSH_PLUGIN_SOURCE_KIND, form: "notice" },
@@ -231,49 +239,67 @@ export function apply(ctx, config = {}) {
             stateOf(key).status = "error";
     });
     // —— 提交 / 预步：识别 /autopilot-* 触发 ——
+    //
+    // ⚠️ 被门禁拒绝的提示词是**替换**掉，不是用 `agent.inject()` 追加提示：
+    //   1) 宿主文档明确 inject 只对「下一个 pre-step」生效，当前步的 batch 已经
+    //      认领完毕，所以提示会晚一步才进模型视野；
+    //   2) inject 只是旁白，原始 prompt 仍会进入模型（"Rejected" 名不副实）。
+    //   改为返回 `{ kind: "enter", messages }`：DSH 的 pre-step 语义允许替换进入
+    //      该 step 的消息，因此原 prompt 被丢弃、通知在**当前步**立刻可见。
     ctx.on("agent/pre-step", async (payload, next) => {
         const decision = await next();
         try {
             const key = agentKey(payload?.agent ?? {});
-            if (key) {
-                // ⚠️ pre-step 在同一 turn 的每个 step 前都会触发（spike 证实）。
-                // 因此 loopCount 必须跨 step 累积，只在**换了新 turn** 时归零；
-                // 早先按每次 pre-step 归零会导致预算永不耗尽、并掩盖真实轮次。
-                const state = stateOf(key);
-                const turn = typeof payload?.turn === "number" ? payload.turn : -1;
-                if (turn !== state.lastTurn) {
-                    state.loopCount = 0;
-                    state.lastTurn = turn;
-                }
-                state.status = "completed";
-                const messages = decision?.kind === "enter" ? decision.messages : [];
-                for (const message of messages) {
-                    const source = message
-                        ?.source;
-                    if (isDshHarnessMessage({ sourceKind: source?.kind, sourcePlugin: source?.plugin })) {
-                        continue;
-                    }
-                    if (source?.kind && source.kind !== "user")
-                        continue;
-                    const project = projectFor(sessionCwdOf(payload?.agent));
-                    if (!project)
-                        continue;
-                    const result = handleDshSubmit(project.store, {
-                        conversationId: key,
-                        prompt: textOfMessage(message),
-                        sourceKind: source?.kind ?? "user",
-                        sourcePlugin: source?.plugin ?? null,
-                    }, project.root);
-                    if (result.injectMessage) {
-                        payload.agent.inject?.(buildPluginMessage(result.injectMessage));
-                    }
-                }
+            // 上游已拒绝（别的 listener 决定不进这一步）时不得改写成 enter。
+            if (!key || decision?.kind !== "enter")
+                return decision;
+            // ⚠️ pre-step 在同一 turn 的每个 step 前都会触发（spike 证实）。
+            // 因此 loopCount 必须跨 step 累积，只在**换了新 turn** 时归零；
+            // 早先按每次 pre-step 归零会导致预算永不耗尽、并掩盖真实轮次。
+            const state = stateOf(key);
+            const turn = typeof payload?.turn === "number" ? payload.turn : -1;
+            if (turn !== state.lastTurn) {
+                state.loopCount = 0;
+                state.lastTurn = turn;
             }
+            state.status = "completed";
+            const kept = [];
+            const notices = [];
+            for (const message of decision.messages) {
+                const source = message
+                    ?.source;
+                // 非本插件处理的来源（自注入续跑、runtime-context 等）原样放行。
+                if (isDshHarnessMessage({ sourceKind: source?.kind, sourcePlugin: source?.plugin }) ||
+                    (source?.kind && source.kind !== "user")) {
+                    kept.push(message);
+                    continue;
+                }
+                const project = projectFor(sessionCwdOf(payload?.agent));
+                if (!project) {
+                    kept.push(message);
+                    continue;
+                }
+                const result = handleDshSubmit(project.store, {
+                    conversationId: key,
+                    prompt: textOfMessage(message),
+                    sourceKind: source?.kind ?? "user",
+                    sourcePlugin: source?.plugin ?? null,
+                }, project.root);
+                if (result.injectMessage) {
+                    // 门禁拒绝：原始提示词不进模型，替换为通知（保持原有顺序：通知在后）。
+                    notices.push(buildPluginMessage(result.injectMessage));
+                    continue;
+                }
+                kept.push(message);
+            }
+            if (notices.length === 0)
+                return decision;
+            return { ...decision, messages: [...kept, ...notices] };
         }
         catch {
             // 钩子异常必须 fail-open：绝不让宿主回合因 autopilot 崩溃
+            return decision;
         }
-        return decision;
     });
     // —— 工具执行后：arm 写类工具 ——
     ctx.on("tools/post-execute", async (exec, result, next) => {
@@ -389,6 +415,8 @@ export function apply(ctx, config = {}) {
                         // ⚠️ 消息必须标记为 **user** 来源，不能是 plugin：
                         // pre-step 会跳过 plugin 来源的消息（那是 Autopilot 自己的续跑
                         // 指令，不该再触发一次状态机）。命令是**用户意图**。
+                        // `id` 必填，理由同 buildPluginMessage：缺 id 的命令回环消息
+                        // 一旦落盘，重新打开会话时会被持久化层判为会话损坏。
                         const key = agentKey(invocation?.agent ?? {});
                         if (!key)
                             return fail("无法确定当前会话。");
@@ -396,6 +424,7 @@ export function apply(ctx, config = {}) {
                         const text = `/${commandName}${rest ? " " + rest : ""}`;
                         try {
                             invocation.agent?.followup?.({
+                                id: randomUUID(),
                                 role: "user",
                                 content: [{ type: "text", text }],
                                 source: { kind: "user" },

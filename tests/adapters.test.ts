@@ -170,6 +170,18 @@ describe("dsh-autopilot 常量与纯函数", () => {
       content: [{ type: "text", text: "autopilot 注入内容" }],
     });
 
+    // 回归：注入消息必须自带唯一 id。缺 id 的消息一旦落盘，重开会话时
+    // 持久化层会抛 `session event at seq N lacks an identified message`，
+    // 整个会话被判为损坏（历史事故：30 条 review/命令消息无 id）。
+    const id = (message as { id?: unknown }).id;
+    expect(typeof id).toBe("string");
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    // 每次构造都必须是新 id，否则 inbox 去重会命中
+    // `message "<id>" is already pending`
+    expect((buildPluginMessage("x") as { id?: unknown }).id).not.toBe(id);
+
     // 与读取端对称：注入的消息必须能被识别为「自家消息」，
     // 否则 autopilot 会把自己的注入当作用户输入，导致循环。
     expect(isDshHarnessMessage({ sourceKind: source?.kind })).toBe(true);
