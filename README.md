@@ -1,5 +1,8 @@
 # Autopilot Harness for DeepSeek Harness (DSH)
 
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/adamsshen/dsh-autopilot-harness)
+[![npm](https://img.shields.io/npm/v/dsh-autopilot-harness.svg)](https://www.npmjs.com/package/dsh-autopilot-harness)
+
 Structured **planning → checklist execution → multi-lens self-review** inside [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), as an in-process DSH plugin.
 
 [中文](./README.zh-CN.md)

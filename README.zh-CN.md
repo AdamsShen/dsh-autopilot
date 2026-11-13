@@ -1,5 +1,8 @@
 # Autopilot Harness for DeepSeek Harness (DSH)
 
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/adamsshen/dsh-autopilot-harness)
+[![npm](https://img.shields.io/npm/v/dsh-autopilot-harness.svg)](https://www.npmjs.com/package/dsh-autopilot-harness)
+
 把 **结构化规划 → 清单式执行 → 多视角自审** 接进 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)，以进程内 DSH 插件的形式运行。
 
 [English](./README.md)
